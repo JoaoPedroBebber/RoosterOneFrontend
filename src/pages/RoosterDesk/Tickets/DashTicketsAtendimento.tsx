@@ -1,6 +1,6 @@
-import { useState, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { Plus, Pencil, Trash2, MessageSquare, AlertCircle, Clock, CheckCircle, User, ExternalLink, AlertTriangle, List, Search, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Plus, Pencil, Trash2, MessageSquare, AlertCircle, Clock, CheckCircle, User, ExternalLink, AlertTriangle, List, Search, ShieldCheck, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,23 +22,38 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { fetchTickets } from "@/lib/api";
+import { dadosMockSistema } from "@/pages/RoosterDesk/dados";
+
+interface TicketItem {
+  id: number;
+  titulo: string;
+  descricao: string;
+  status: string;
+  prioridade: string;
+  usuario: string;
+  data?: string;
+  categoria: string;
+  subcategoria?: string;
+  anexos?: Array<{ nome: string; tamanho: string }>;
+}
 
 const Tickets = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  // when a status card is clicked, navigate to the search page passing the
-  // chosen status both as a query string and via navigation state. the
-  // receiving page can use this "gatilho" to trigger a backend request.
+  // when a status card is clicked, navigate to the main tickets page with the
+  // chosen status filter applied so the relevant ticket list opens immediately.
   const handleStatusClick = (status: string) => {
     navigate(
-      `/tickets/busca?status=${encodeURIComponent(status)}`,
+      `/tickets?status=${encodeURIComponent(status)}`,
       {
         state: { filter: { status } },
       }
     );
   };
 
-  const [tickets, setTickets] = useState([
+  const [tickets, setTickets] = useState<TicketItem[]>([
     { id: 1, titulo: "Problema com login", descricao: "Usuário não consegue fazer login no sistema", status: "Aberto", prioridade: "Alta", usuario: "Ana Souza", data: "2024-03-12", categoria: "Sistema", subcategoria: "Login" },
     { id: 2, titulo: "Computador lento", descricao: "Computador da sala 101 está muito lento", status: "Em atendimento", prioridade: "Média", usuario: "Carlos Silva", data: "2024-03-11", categoria: "Hardware", subcategoria: "Desempenho" },
     { id: 3, titulo: "Impressora sem papel", descricao: "Impressora do laboratório precisa de papel", status: "Encerrado", prioridade: "Baixa", usuario: "Maria Oliveira", data: "2024-03-10", categoria: "Periféricos", subcategoria: "Impressão" },
@@ -48,6 +63,29 @@ const Tickets = () => {
     { id: 7, titulo: "Pedido de liberação", descricao: "Necessita aprovação do gestor", status: "Aguardando aprovação", prioridade: "Média", usuario: "Fernanda Lima", data: "2024-03-13", categoria: "Sistema", subcategoria: "Acesso" },
     { id: 8, titulo: "Reabertura de chamado", descricao: "Reaberto após revisão", status: "Reaberto", prioridade: "Média", usuario: "Carlos Silva", data: "2024-03-14", categoria: "Software", subcategoria: "Acesso" },
   ]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadTickets = async () => {
+      try {
+        const ticketsApi = await fetchTickets();
+        if (active) {
+          setTickets(ticketsApi);
+        }
+      } catch {
+        if (active) {
+          setTickets(dadosMockSistema.tickets);
+        }
+      }
+    };
+
+    loadTickets();
+
+    return () => {
+      active = false;
+    };
+  }, []);
   const [filtroTitulo, setFiltroTitulo] = useState("");
   const [filtroId, setFiltroId] = useState("");
   const [filtroUsuario, setFiltroUsuario] = useState("");
@@ -57,6 +95,10 @@ const Tickets = () => {
   const [filtroSubcategoria, setFiltroSubcategoria] = useState("");
   const [filtroData, setFiltroData] = useState("");
 
+  useEffect(() => {
+    const statusFromQuery = searchParams.get("status") || "";
+    setFiltroStatus(statusFromQuery);
+  }, [searchParams]);
   const [novoTitulo, setNovoTitulo] = useState("");
   const [novaDescricao, setNovaDescricao] = useState("");
   const [novaCategoria, setNovaCategoria] = useState("");
@@ -104,6 +146,9 @@ const Tickets = () => {
     (filtroSubcategoria ? ticket.subcategoria === filtroSubcategoria : true) &&
     (filtroData ? ticket.data === filtroData : true)
   );
+
+  const categoriaAtiva = filtroStatus || "Todos";
+  const mostrarCategoria = Boolean(filtroStatus);
 
   // Estatísticas dos tickets por status
   const estatisticas = useMemo(() => {
@@ -154,8 +199,32 @@ const Tickets = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Tickets</h1>
-          <p className="text-muted-foreground">Gerenciamento de tickets e suporte técnico</p>
+          <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+            Rooster Desk
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            {mostrarCategoria && (
+              <button
+                type="button"
+                onClick={() => navigate("/tickets")}
+                className="rounded-full border border-border p-2 text-muted-foreground transition hover:bg-muted"
+                aria-label="Voltar para todos os tickets"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            )}
+            <h1 className="text-3xl font-bold">Tickets</h1>
+            {mostrarCategoria && (
+              <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+                {categoriaAtiva}
+              </span>
+            )}
+          </div>
+          <p className="text-muted-foreground">
+            {mostrarCategoria
+              ? "Visualizando os tickets desta categoria."
+              : "Gerenciamento de tickets e suporte técnico"}
+          </p>
         </div>
         <Dialog>
           <DialogTrigger asChild>
@@ -257,44 +326,45 @@ const Tickets = () => {
         </Dialog>
       </div>
 
-      {/* Meus Tickets */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Meus Tickets</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            "Aberto",
-            "Em atendimento",
-            "Reaberto",
-            "Aguardando retorno",
-            "Aguardando terceiro",
-            "Aguardando aprovação",
-            "Encerrado",
-            "Atrasado",
-          ].map((status) => {
-            const stat = estatisticas[status];
-            if (!stat) return null;
-            const IconComponent = stat.icon;
-            return (
-              <Card
-                key={status}
-                className={`cursor-pointer hover:shadow-md transition-shadow ${stat.bgColor} min-h-[120px]`}
-                onClick={() => handleStatusClick(status)}
-              >
-                <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                  <IconComponent className={`h-8 w-8 ${stat.color} mb-2`} />
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">{status}</p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{stat.count}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
+      {!mostrarCategoria && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Categorias de tickets</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              "Aberto",
+              "Em atendimento",
+              "Reaberto",
+              "Aguardando retorno",
+              "Aguardando terceiro",
+              "Aguardando aprovação",
+              "Encerrado",
+              "Atrasado",
+            ].map((status) => {
+              const stat = estatisticas[status];
+              if (!stat) return null;
+              const IconComponent = stat.icon;
+              return (
+                <Card
+                  key={status}
+                  className={`cursor-pointer hover:shadow-md transition-shadow ${stat.bgColor} min-h-[120px]`}
+                  onClick={() => handleStatusClick(status)}
+                >
+                  <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+                    <IconComponent className={`h-8 w-8 ${stat.color} mb-2`} />
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">{status}</p>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{stat.count}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Filtros */}
+      {/* Filtros simples */}
       <Card>
         <CardHeader>
-          <CardTitle>Filtros de Busca</CardTitle>
+          <CardTitle>Filtros simples</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -388,7 +458,7 @@ const Tickets = () => {
         </CardContent>
       </Card>
 
-      {/* Tabela de Tickets */}
+      {/* Lista de Tickets */}
       <div className="w-full">
         <div
           style={{
@@ -413,7 +483,11 @@ const Tickets = () => {
             </TableHeader>
             <TableBody>
               {ticketsFiltrados.map((ticket) => (
-                <TableRow key={ticket.id}>
+                <TableRow
+                  key={ticket.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/tickets/${ticket.id}`)}
+                >
                   <TableCell className="font-medium text-muted-foreground">#{ticket.id}</TableCell>
                   <TableCell className="font-medium">{ticket.titulo}</TableCell>
                   <TableCell>
@@ -430,7 +504,7 @@ const Tickets = () => {
                   <TableCell>{ticket.data}</TableCell>
                   <TableCell className="text-center">
                     <div className="flex justify-center gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/tickets/${ticket.id}`)}>
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                       <Button variant="outline" size="sm">
@@ -448,28 +522,6 @@ const Tickets = () => {
         </div>
       </div>
 
-      {/* Tickets da Equipe */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Tickets da Equipe</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Object.entries(estatisticas).map(([status, stat]) => {
-            const IconComponent = stat.icon;
-            return (
-              <Card
-                key={status}
-                className={`cursor-pointer hover:shadow-md transition-shadow ${stat.bgColor} min-h-[120px]`}
-                onClick={() => navigate('/Tickets/BuscaTicket', { state: { status } })}
-              >
-                <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                  <IconComponent className={`h-8 w-8 ${stat.color} mb-2`} />
-                  <p className="text-sm font-medium text-muted-foreground mb-1">{status}</p>
-                  <p className="text-2xl font-bold">{stat.count}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };

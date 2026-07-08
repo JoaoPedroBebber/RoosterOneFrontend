@@ -2,6 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { Plus, Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { dadosMockSistema } from "@/pages/RoosterDesk/dados";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,12 +18,7 @@ interface Setor {
 const Setores = () => {
   const navigate = useNavigate();
 
-  const [setores, setSetores] = useState<Setor[]>([
-    { id: 1, nome: "TI", descricao: "Infraestrutura e sistemas" },
-    { id: 2, nome: "Financeiro", descricao: "Contas a pagar e receber" },
-    { id: 3, nome: "Marketing", descricao: "Vídeos e imagens" },
-  ]);
-
+  const [setores, setSetores] = useState<Setor[]>(dadosMockSistema.setores);
   const [filtro, setFiltro] = useState("");
   const [novoSetor, setNovoSetor] = useState("");
   const [novaDescricao, setNovaDescricao] = useState("");

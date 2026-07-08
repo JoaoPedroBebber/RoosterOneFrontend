@@ -4,24 +4,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { useDeskRole } from "@/context/DeskContext";
+import { login, mapBackendRole } from "@/lib/api";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [usuario, setUsuario] = useState("");
+  const { setRole } = useDeskRole();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [usuarioError, setUsuarioError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [mostrarRecuperacao, setMostrarRecuperacao] = useState(false);
   const [recuperacaoEmail, setRecuperacaoEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     let hasError = false;
     setUsuarioError("");
     setPasswordError("");
+    setLoginError("");
 
-    if (!usuario.trim()) {
-      setUsuarioError("Digite o usuário para continuar.");
+    if (!email.trim()) {
+      setUsuarioError("Digite o e-mail para continuar.");
       hasError = true;
     }
 
@@ -32,7 +38,17 @@ const Login = () => {
 
     if (hasError) return;
 
-    navigate("/dashboard");
+    setIsSubmitting(true);
+
+    try {
+      const response = await login(email.trim(), password);
+      setRole(mapBackendRole(response.usuario.tipo));
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : "Não foi possível entrar.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleRecuperacaoSubmit = (e: React.FormEvent) => {
@@ -56,13 +72,13 @@ const Login = () => {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <Label htmlFor="usuario" className="text-slate-200">Usuário</Label>
+              <Label htmlFor="usuario" className="text-slate-200">E-mail</Label>
               <Input
                 id="usuario"
-                type="text"
-                placeholder="Digite seu usuário"
-                value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
+                type="email"
+                placeholder="Digite seu e-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 bg-slate-800 text-white"
               />
               {usuarioError && <div className="mt-1 text-xs text-rose-400">{usuarioError}</div>}
@@ -81,7 +97,11 @@ const Login = () => {
               {passwordError && <div className="mt-1 text-xs text-rose-400">{passwordError}</div>}
             </div>
 
-            <Button type="submit" className="w-full">Entrar</Button>
+            {loginError && <div className="text-sm text-rose-400">{loginError}</div>}
+
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Entrando..." : "Entrar"}
+            </Button>
 
             <div className="text-center">
               <button

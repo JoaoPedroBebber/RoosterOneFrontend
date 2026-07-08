@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Pencil, Trash2, Phone, FolderOpen } from "lucide-react";
 import Papa from 'papaparse';
 import { Button } from "@/components/ui/button";
+import { dadosMockSistema } from "@/pages/RoosterDesk/dados";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -32,13 +33,7 @@ interface User {
 }
 
 const Usuarios = () => {
-  const [usuarios, setUsuarios] = useState<User[]>([
-    { id: 1, nome: "Ana Souza", telefone: "(41) 99999-1111", email: "ana@example.com", tipo: "Admin", setor: "TI" },
-    { id: 2, nome: "Carlos Silva", telefone: "(41) 98888-2222", email: "carlos@example.com", tipo: "Professor", setor: "Ensino" },
-    { id: 3, nome: "Maria Oliveira", telefone: "(41) 97777-3333", email: "maria@example.com", tipo: "Coordenação", setor: "Administração" },
-    { id: 4, nome: "João Santos", telefone: "(41) 96666-4444", email: "joao@example.com", tipo: "Administrativo", setor: "Financeiro" },
-    { id: 5, nome: "Fernanda Lima", telefone: "(41) 95555-5555", email: "fernanda@example.com", tipo: "Professor", setor: "Ensino" },
-  ]);
+  const [usuarios, setUsuarios] = useState<User[]>(dadosMockSistema.usuarios);
   const [filtroNome, setFiltroNome] = useState("");
   const [filtroTelefone, setFiltroTelefone] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("");
@@ -48,6 +43,7 @@ const Usuarios = () => {
   const [editUserId, setEditUserId] = useState<number | null>(null);
   const [editEmail, setEditEmail] = useState("");
   const [editTelefone, setEditTelefone] = useState("");
+  const [editTipo, setEditTipo] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [adminPassword, setAdminPassword] = useState("");
@@ -102,16 +98,18 @@ const Usuarios = () => {
     setEditUserId(usuario.id);
     setEditEmail(usuario.email);
     setEditTelefone(usuario.telefone);
+    setEditTipo(usuario.tipo);
     setIsEditDialogOpen(true);
   };
 
   const saveUserEdition = () => {
     if (editUserId === null) return;
-    setUsuarios(prev => prev.map(u => u.id === editUserId ? { ...u, email: editEmail, telefone: editTelefone } : u));
+    setUsuarios(prev => prev.map(u => u.id === editUserId ? { ...u, email: editEmail, telefone: editTelefone, tipo: editTipo } : u));
     setIsEditDialogOpen(false);
     setEditUserId(null);
     setEditEmail("");
     setEditTelefone("");
+    setEditTipo("");
   };
 
   const openDeleteDialog = (userId: number) => {
@@ -213,6 +211,15 @@ const Usuarios = () => {
                     onChange={e => setEditEmail(e.target.value)}
                     placeholder="usuario@example.com"
                   />
+                </div>
+                <div>
+                  <Label htmlFor="editTipo">Permissões</Label>
+                  <select id="editTipo" value={editTipo} onChange={e => setEditTipo(e.target.value)} className="w-full border rounded h-10 px-2 bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100">
+                    <option value="Admin">Admin</option>
+                    <option value="Professor">Professor</option>
+                    <option value="Coordenação">Coordenação</option>
+                    <option value="Administrativo">Administrativo</option>
+                  </select>
                 </div>
                 <Button className="w-full" onClick={saveUserEdition}>Salvar alterações</Button>
               </div>

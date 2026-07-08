@@ -1,7 +1,8 @@
 ﻿import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { dadosMockSistema } from "@/pages/RoosterDesk/dados";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,16 +18,12 @@ interface Categoria {
 const Categorias = () => {
   const navigate = useNavigate();
 
-  const [categorias, setCategorias] = useState<Categoria[]>([
-    { id: 1, nome: "Infraestrutura", descricao: "Atualizações de estrutura e instalações físicas", subcategorias: ["Reforma", "Instalação", "Manutenção"] },
-    { id: 2, nome: "Software", descricao: "Erros e melhorias em sistemas e aplicações", subcategorias: ["Bug", "Nova funcionalidade", "Atualização"] },
-    { id: 3, nome: "Hardware", descricao: "Atendimento em equipamentos, computadores e periféricos", subcategorias: ["Substituição", "Reparo", "Configuração"] },
-    { id: 4, nome: "Rede", descricao: "Conectividade, VPN e segurança de rede", subcategorias: ["Conectividade", "VPN", "Segurança"] },
-  ]);
-
+  const [categorias, setCategorias] = useState<Categoria[]>(dadosMockSistema.categorias);
   const [filtro, setFiltro] = useState("");
   const [novaCategoria, setNovaCategoria] = useState("");
   const [novaDescricao, setNovaDescricao] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const categoriasFiltradas = useMemo(() => {
     const term = filtro.trim().toLowerCase();
@@ -37,26 +34,56 @@ const Categorias = () => {
     );
   }, [categorias, filtro]);
 
-  const handleCriarCategoria = () => {
+  const handleSaveCategoria = () => {
     const nome = novaCategoria.trim();
     if (!nome) return;
 
-    const existe = categorias.some(c => c.nome.toLowerCase() === nome.toLowerCase());
-    if (existe) {
-      alert("Categoria já existe.");
-      return;
+    if (editingId) {
+      setCategorias(prev => prev.map(item =>
+        item.id === editingId
+          ? { ...item, nome, descricao: novaDescricao.trim() || "Sem descrição" }
+          : item
+      ));
+      setEditingId(null);
+    } else {
+      const existe = categorias.some(c => c.nome.toLowerCase() === nome.toLowerCase());
+      if (existe) {
+        alert("Categoria já existe.");
+        return;
+      }
+
+      setCategorias(prev => [
+        ...prev,
+        {
+          id: Date.now(),
+          nome,
+          descricao: novaDescricao.trim() || "Sem descrição",
+          subcategorias: [],
+        },
+      ]);
     }
 
-    setCategorias(prev => [
-      ...prev,
-      {
-        id: Date.now(),
-        nome,
-        descricao: novaDescricao.trim() || "Sem descrição",
-        subcategorias: [],
-      },
-    ]);
+    setNovaCategoria("");
+    setNovaDescricao("");
+    setIsOpen(false);
+  };
 
+  const handleDeleteCategoria = (id: number) => {
+    if (confirm("Tem certeza que deseja excluir esta categoria?")) {
+      setCategorias(prev => prev.filter(item => item.id !== id));
+    }
+  };
+
+  const handleEditCategoria = (categoria: Categoria) => {
+    setNovaCategoria(categoria.nome);
+    setNovaDescricao(categoria.descricao);
+    setEditingId(categoria.id);
+    setIsOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsOpen(false);
+    setEditingId(null);
     setNovaCategoria("");
     setNovaDescricao("");
   };
@@ -68,7 +95,7 @@ const Categorias = () => {
           <h1 className="text-3xl font-bold">Categorias</h1>
           <p className="text-muted-foreground">Gerencie categorias e acesse subcategorias.</p>
         </div>
-        <Dialog>
+        <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -77,7 +104,7 @@ const Categorias = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nova Categoria</DialogTitle>
+              <DialogTitle>{editingId ? "Editar Categoria" : "Nova Categoria"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -96,8 +123,8 @@ const Categorias = () => {
                   onChange={e => setNovaDescricao(e.target.value)}
                 />
               </div>
-              <Button onClick={handleCriarCategoria} className="w-full">
-                Criar Categoria
+              <Button onClick={handleSaveCategoria} className="w-full">
+                {editingId ? "Salvar alterações" : "Criar Categoria"}
               </Button>
             </div>
           </DialogContent>
@@ -134,13 +161,30 @@ const Categorias = () => {
             <CardContent>
               <p className="text-sm text-muted-foreground mb-3">{categoria.descricao}</p>
               <div className="text-xs text-muted-foreground mb-3">{categoria.subcategorias.length} subcategorias</div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/categorias/${encodeURIComponent(categoria.nome)}/subcategorias`)}
-              >
-                Ver Subcategorias
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => navigate(`/categorias/${encodeURIComponent(categoria.nome)}/subcategorias`)}
+                >
+                  Ver Subcategorias
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditCategoria(categoria)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDeleteCategoria(categoria.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}

@@ -1,5 +1,6 @@
-﻿import { useState, useMemo } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { dadosMockSistema } from "@/pages/RoosterDesk/dados";
 import { Plus, Pencil, Trash2, MessageSquare, AlertCircle, Clock, CheckCircle, User, ExternalLink, AlertTriangle, List, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { fetchTickets } from "@/lib/api";
 
 const statsColor = {
   aberto: "bg-indigo-100 text-indigo-800 dark:bg-indigo-500/30 dark:text-indigo-100",
@@ -27,16 +29,31 @@ const statsColor = {
 const Dashboard = () => {
   const navigate = useNavigate();
 
-  const [tickets, setTickets] = useState([
-    { id: 1, titulo: "Problema com login", status: "Encerrado", prioridade: "Alta", usuario: "Ana Souza", categoria: "Sistema", tecnico: "Carlos Silva", data: "2024-03-12" },
-    { id: 2, titulo: "Computador lento", status: "Em atendimento", prioridade: "Média", usuario: "Carlos Silva", categoria: "Hardware", tecnico: "Roberto Costa", data: "2024-03-11" },
-    { id: 3, titulo: "Impressora sem papel", status: "Encerrado", prioridade: "Baixa", usuario: "Maria Oliveira", categoria: "Periféricos", tecnico: "João Santos", data: "2024-03-10" },
-    { id: 4, titulo: "Sistema travando", status: "Aguardando retorno", prioridade: "Alta", usuario: "João Santos", categoria: "Software", tecnico: "Carlos Silva", data: "2024-03-09" },
-    { id: 5, titulo: "Problema de rede", status: "Atrasado", prioridade: "Média", usuario: "Fernanda Lima", categoria: "Rede", tecnico: "Roberto Costa", data: "2024-03-08" },
-    { id: 6, titulo: "Atualização pendente", status: "Atrasado", prioridade: "Baixa", usuario: "Roberto Costa", categoria: "Sistema", tecnico: "Carlos Silva", data: "2024-03-07" },
-  ]);
-
+  const [tickets, setTickets] = useState(dadosMockSistema.tickets);
   const [filtroTitulo, setFiltroTitulo] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    const loadTickets = async () => {
+      try {
+        const ticketsApi = await fetchTickets();
+        if (active) {
+          setTickets(ticketsApi);
+        }
+      } catch {
+        if (active) {
+          setTickets(dadosMockSistema.tickets);
+        }
+      }
+    };
+
+    loadTickets();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const ticketsFiltrados = useMemo(() =>
     tickets.filter((ticket) =>

@@ -4,6 +4,7 @@ import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { dadosMockSistema } from "@/pages/RoosterDesk/dados";
 
 interface Categoria {
   nome: string;
@@ -11,18 +12,16 @@ interface Categoria {
   subcategorias: string[];
 }
 
-const categoriasBase: Categoria[] = [
-  { nome: "Infraestrutura", descricao: "Atualizações de estrutura e instalações físicas", subcategorias: ["Reforma", "Instalação", "Manutenção"] },
-  { nome: "Software", descricao: "Erros e melhorias em sistemas e aplicações", subcategorias: ["Bug", "Nova funcionalidade", "Atualização"] },
-  { nome: "Hardware", descricao: "Atendimento em equipamentos, computadores e periféricos", subcategorias: ["Substituição", "Reparo", "Configuração"] },
-  { nome: "Rede", descricao: "Conectividade, VPN e segurança de rede", subcategorias: ["Conectividade", "VPN", "Segurança"] },
-];
+const categoriasBase: Categoria[] = dadosMockSistema.categorias.map((c) => ({
+  nome: c.nome,
+  descricao: c.descricao,
+  subcategorias: c.subcategorias,
+}));
 
-const setorUsuariosMap: Record<string, string[]> = {
-  TI: ["Ana Souza", "Carlos Silva"],
-  Financeiro: ["João Santos", "Maria Oliveira"],
-  Marketing: ["Fernanda Lima", "Roberto Costa"],
-};
+const setorUsuariosMap: Record<string, string[]> = dadosMockSistema.setorDetalhes.reduce((acc, detalhes) => {
+  acc[detalhes.nome] = detalhes.usuarios;
+  return acc;
+}, {} as Record<string, string[]>);
 
 const Funcoes = () => {
   const navigate = useNavigate();

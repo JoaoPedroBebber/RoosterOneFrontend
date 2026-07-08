@@ -1,61 +1,45 @@
 ﻿import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Search } from "lucide-react";
+import { ArrowLeft, Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { dadosMockSistema } from "@/pages/RoosterDesk/dados";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface SubcategoriaItem {
+  id: number;
   nome: string;
   slaVisualizacao: string;
   tempoResolucao: string;
   prioridade: 'Baixa' | 'Média' | 'Alta' | 'Urgente';
 }
 
-interface CategoriaComSub {
-  nome: string;
-  subcategorias: SubcategoriaItem[];
-}
-
-const categoriasBase: CategoriaComSub[] = [
-  { nome: "Infraestrutura", subcategorias: [
-    { nome: "Reforma", slaVisualizacao: "4h", tempoResolucao: "48h", prioridade: "Média" },
-    { nome: "Instalação", slaVisualizacao: "6h", tempoResolucao: "72h", prioridade: "Baixa" },
-    { nome: "Manutenção", slaVisualizacao: "2h", tempoResolucao: "24h", prioridade: "Alta" }
-  ] },
-  { nome: "Software", subcategorias: [
-    { nome: "Bug", slaVisualizacao: "1h", tempoResolucao: "12h", prioridade: "Urgente" },
-    { nome: "Nova funcionalidade", slaVisualizacao: "8h", tempoResolucao: "96h", prioridade: "Baixa" },
-    { nome: "Atualização", slaVisualizacao: "4h", tempoResolucao: "72h", prioridade: "Média" }
-  ] },
-  { nome: "Hardware", subcategorias: [
-    { nome: "Substituição", slaVisualizacao: "2h", tempoResolucao: "24h", prioridade: "Alta" },
-    { nome: "Reparo", slaVisualizacao: "3h", tempoResolucao: "36h", prioridade: "Média" },
-    { nome: "Configuração", slaVisualizacao: "4h", tempoResolucao: "48h", prioridade: "Baixa" }
-  ] },
-  { nome: "Rede", subcategorias: [
-    { nome: "Conectividade", slaVisualizacao: "1h", tempoResolucao: "12h", prioridade: "Urgente" },
-    { nome: "VPN", slaVisualizacao: "2h", tempoResolucao: "24h", prioridade: "Alta" },
-    { nome: "Segurança", slaVisualizacao: "2h", tempoResolucao: "48h", prioridade: "Alta" }
-  ] },
-];
-
 const Subcategorias = () => {
   const { categoria } = useParams<{ categoria: string }>();
   const navigate = useNavigate();
 
   const nomeCategoria = categoria ? decodeURIComponent(categoria) : "";
+  const [subcategorias, setSubcategorias] = useState<SubcategoriaItem[]>(
+    dadosMockSistema.categorias
+      .find(c => c.nome === nomeCategoria)
+      ?.subcategorias.map((nome, idx) => ({
+        id: idx,
+        nome,
+        slaVisualizacao: "4h",
+        tempoResolucao: "48h",
+        prioridade: "Média" as const,
+      })) ?? []
+  );
 
-  const categoriaAtiva = categoriasBase.find(c => c.nome === nomeCategoria) || { nome: nomeCategoria || "Categoria", subcategorias: [] };
-
-  const [subcategorias, setSubcategorias] = useState<SubcategoriaItem[]>(categoriaAtiva.subcategorias);
   const [filtro, setFiltro] = useState("");
   const [novaSubcategoria, setNovaSubcategoria] = useState("");
   const [novoSLAVizualizacao, setNovoSLAVizualizacao] = useState("4h");
   const [novoTempoResolucao, setNovoTempoResolucao] = useState("24h");
-  const [novaPrioridade, setNovaPrioridade] = useState<'Baixa' | 'Média' | 'Alta' | 'Urgente'>("Baixa");
+  const [novaPrioridade, setNovaPrioridade] = useState<'Baixa' | 'Média' | 'Alta' | 'Urgente'>("Média");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const subcategoriasFiltradas = useMemo(() => {
     const term = filtro.trim().toLowerCase();
@@ -63,23 +47,64 @@ const Subcategorias = () => {
     return subcategorias.filter(sub => sub.nome.toLowerCase().includes(term));
   }, [subcategorias, filtro]);
 
-  const handleCriarSubcategoria = () => {
+  const handleSaveSubcategoria = () => {
     const nome = novaSubcategoria.trim();
-    const slaVisualizacao = novoSLAVizualizacao.trim() || "4h";
-    const tempoResolucao = novoTempoResolucao.trim() || "24h";
-    const prioridade = novaPrioridade;
     if (!nome) return;
 
-    if (subcategorias.some(sub => sub.nome.toLowerCase() === nome.toLowerCase())) {
-      alert("Subcategoria já existe.");
-      return;
+    if (editingId !== null) {
+      setSubcategorias(prev => prev.map(item =>
+        item.id === editingId
+          ? { ...item, nome, slaVisualizacao: novoSLAVizualizacao, tempoResolucao: novoTempoResolucao, prioridade: novaPrioridade }
+          : item
+      ));
+      setEditingId(null);
+    } else {
+      if (subcategorias.some(sub => sub.nome.toLowerCase() === nome.toLowerCase())) {
+        alert("Subcategoria já existe.");
+        return;
+      }
+
+      setSubcategorias(prev => [
+        ...prev,
+        {
+          id: Math.max(...prev.map(p => p.id), 0) + 1,
+          nome,
+          slaVisualizacao: novoSLAVizualizacao,
+          tempoResolucao: novoTempoResolucao,
+          prioridade: novaPrioridade,
+        }
+      ]);
     }
 
-    setSubcategorias(prev => [...prev, { nome, slaVisualizacao, tempoResolucao, prioridade }]);
     setNovaSubcategoria("");
     setNovoSLAVizualizacao("4h");
     setNovoTempoResolucao("24h");
-    setNovaPrioridade("Baixa");
+    setNovaPrioridade("Média");
+    setIsOpen(false);
+  };
+
+  const handleDeleteSubcategoria = (id: number) => {
+    if (confirm("Tem certeza que deseja excluir esta subcategoria?")) {
+      setSubcategorias(prev => prev.filter(item => item.id !== id));
+    }
+  };
+
+  const handleEditSubcategoria = (sub: SubcategoriaItem) => {
+    setNovaSubcategoria(sub.nome);
+    setNovoSLAVizualizacao(sub.slaVisualizacao);
+    setNovoTempoResolucao(sub.tempoResolucao);
+    setNovaPrioridade(sub.prioridade);
+    setEditingId(sub.id);
+    setIsOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsOpen(false);
+    setEditingId(null);
+    setNovaSubcategoria("");
+    setNovoSLAVizualizacao("4h");
+    setNovoTempoResolucao("24h");
+    setNovaPrioridade("Média");
   };
 
   return (
@@ -91,13 +116,13 @@ const Subcategorias = () => {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => navigate("/categorias")}> <ArrowLeft className="h-4 w-4" /> Voltar</Button>
-          <Dialog>
+          <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
             <DialogTrigger asChild>
               <Button><Plus className="mr-2 h-4 w-4" />Nova Subcategoria</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Nova Subcategoria</DialogTitle>
+                <DialogTitle>{editingId !== null ? "Editar Subcategoria" : "Nova Subcategoria"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -140,7 +165,7 @@ const Subcategorias = () => {
                     <option value="Urgente">Urgente</option>
                   </select>
                 </div>
-                <Button onClick={handleCriarSubcategoria} className="w-full">Adicionar</Button>
+                <Button onClick={handleSaveSubcategoria} className="w-full">{editingId !== null ? "Salvar alterações" : "Adicionar"}</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -169,18 +194,33 @@ const Subcategorias = () => {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {subcategoriasFiltradas.map((sub, idx) => (
-          <Card key={`${sub.nome}-${idx}`} className="hover:shadow-lg transition-shadow">
-            <CardContent>
-              <p className="text-base font-medium">{sub.nome}</p>
-              <p className="text-sm text-muted-foreground">SLA de visualização: {sub.slaVisualizacao}</p>
-              <p className="text-sm text-muted-foreground">Tempo de resolução: {sub.tempoResolucao}</p>
-              <p className="text-sm text-muted-foreground">Prioridade: <span className={
-                sub.prioridade === 'Baixa' ? 'text-green-600' :
-                sub.prioridade === 'Média' ? 'text-yellow-600' :
-                sub.prioridade === 'Alta' ? 'text-orange-600' :
-                'text-red-600'
-              }>{sub.prioridade}</span></p>
+        {subcategoriasFiltradas.map(sub => (
+          <Card key={sub.id} className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="text-lg">{sub.nome}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="text-sm text-muted-foreground">
+                <div>SLA Visualização: {sub.slaVisualizacao}</div>
+                <div>Tempo Resolução: {sub.tempoResolucao}</div>
+                <div>Prioridade: {sub.prioridade}</div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditSubcategoria(sub)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDeleteSubcategoria(sub.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -190,7 +230,6 @@ const Subcategorias = () => {
         <Card>
           <CardContent className="py-12 text-center">
             <h3 className="text-lg font-medium">Nenhuma subcategoria encontrada</h3>
-            <p className="text-muted-foreground">Crie a primeira ou ajuste o filtro.</p>
           </CardContent>
         </Card>
       )}

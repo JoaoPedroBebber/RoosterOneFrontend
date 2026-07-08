@@ -1,11 +1,13 @@
-import { useState, useMemo, useEffect } from "react";
-import { ArrowLeft, Search, Filter, Download } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Filter, Download, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { dadosMockSistema } from "@/pages/RoosterDesk/dados";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { fetchTickets } from "@/lib/api";
 
 const BuscaTicket = () => {
   const navigate = useNavigate();
@@ -17,25 +19,41 @@ const BuscaTicket = () => {
   // serves as the "gatilho" for the backend to load only the requested tickets.
   useEffect(() => {
     const statusFromQuery = searchParams.get("status");
-    const statusFromState = (location.state as any)?.filter?.status;
-    const status = statusFromQuery || statusFromState;
+    const statePayload = location.state as { filter?: { status?: string }; status?: string } | null;
+    const statusFromState = statePayload?.filter?.status ?? statePayload?.status;
+    const status = statusFromQuery || statusFromState || "";
 
-    if (status) {
-      setFiltros(prev => ({ ...prev, status }));
-      // trigger backend fetch (placeholder)
-      // fetch(`/api/tickets?status=${encodeURIComponent(status)}`)
-      //   .then(res => res.json())
-      //   .then(data => setTickets(data));
-    }
+    setFiltros(prev => ({ ...prev, status }));
+
+    // trigger backend fetch (placeholder)
+    // fetch(`/api/tickets?status=${encodeURIComponent(status)}`)
+    //   .then(res => res.json())
+    //   .then(data => setTickets(data));
   }, [searchParams, location.state]);
-  const [tickets, setTickets] = useState([
-    { id: 1, titulo: "Problema com login", descricao: "Usuário não consegue fazer login no sistema", status: "Aberto", prioridade: "Alta", usuario: "Ana Souza", data: "2024-03-12", categoria: "Sistema", subcategoria: "Login" },
-    { id: 2, titulo: "Computador lento", descricao: "Computador da sala 101 está muito lento", status: "Em atendimento", prioridade: "Média", usuario: "Carlos Silva", data: "2024-03-11", categoria: "Hardware", subcategoria: "Desempenho" },
-    { id: 3, titulo: "Impressora sem papel", descricao: "Impressora do laboratório precisa de papel", status: "Encerrado", prioridade: "Baixa", usuario: "Maria Oliveira", data: "2024-03-10", categoria: "Periféricos", subcategoria: "Impressão" },
-    { id: 4, titulo: "Sistema travando", descricao: "Aplicação congela durante uso", status: "Aguardando retorno", prioridade: "Alta", usuario: "João Santos", data: "2024-03-09", categoria: "Software", subcategoria: "Desempenho" },
-    { id: 5, titulo: "Problema de rede", descricao: "Internet lenta no laboratório", status: "Aguardando terceiro", prioridade: "Média", usuario: "Fernanda Lima", data: "2024-03-08", categoria: "Rede", subcategoria: "Conectividade" },
-    { id: 6, titulo: "Atualização pendente", descricao: "Sistema precisa ser atualizado", status: "Atrasado", prioridade: "Baixa", usuario: "Roberto Costa", data: "2024-03-07", categoria: "Sistema", subcategoria: "Atualização" },
-  ]);
+  const [tickets, setTickets] = useState(dadosMockSistema.tickets);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadTickets = async () => {
+      try {
+        const ticketsApi = await fetchTickets();
+        if (active) {
+          setTickets(ticketsApi);
+        }
+      } catch {
+        if (active) {
+          setTickets(dadosMockSistema.tickets);
+        }
+      }
+    };
+
+    loadTickets();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const [filtros, setFiltros] = useState({
     id: "",
@@ -50,8 +68,8 @@ const BuscaTicket = () => {
 
   const statusOptions = ["Aberto", "Em atendimento", "Reaberto", "Encerrado", "Aguardando retorno", "Aguardando terceiro", "Aguardando aprovação", "Atrasado"];
   const prioridadeOptions = ["Baixa", "Média", "Alta"];
-  const categoriaOptions = ["Sistema", "Hardware", "Software", "Rede", "Periféricos"];
-  const subcategoriaOptions = ["Login", "Desempenho", "Conectividade", "Impressão", "Atualização", "Acesso"];
+  const categoriaOptions = [...new Set(dadosMockSistema.tickets.map(ticket => ticket.categoria))];
+  const subcategoriaOptions = [...new Set(dadosMockSistema.tickets.map(ticket => ticket.subcategoria || ""))].filter(Boolean);
 
   const ticketsFiltrados = useMemo(() => {
     return tickets.filter(ticket =>

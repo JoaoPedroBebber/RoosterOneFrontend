@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Clock, AlertCircle, CheckCircle, MessageSquare, Paperclip, X } from "lucide-react";
+import { dadosMockSistema } from "@/pages/RoosterDesk/dados";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { fetchTicketById } from "@/lib/api";
 
 interface Anexo {
   id: number;
@@ -28,15 +30,7 @@ const Ticket = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  // Dados simulados dos tickets (mesmos do BuscaTicket)
-  const ticketsData = [
-    { id: 1, titulo: "Problema com login", descricao: "Usuário não consegue fazer login no sistema. Recebe mensagem de erro ao tentar acessar.", status: "Em atendimento", prioridade: "Alta", usuario: "Ana Souza", categoria: "Sistema", dataCriacao: "2024-03-12", horaCriacao: "14:30", sla: "24 horas", tempoRestante: "18 horas 45 minutos", setor: "Suporte Técnico" },
-    { id: 2, titulo: "Computador lento", descricao: "Computador da sala 101 está muito lento", status: "Em atendimento", prioridade: "Média", usuario: "Carlos Silva", categoria: "Hardware", dataCriacao: "2024-03-11", horaCriacao: "15:00", sla: "48 horas", tempoRestante: "36 horas 30 minutos", setor: "Suporte Técnico" },
-    { id: 3, titulo: "Impressora sem papel", descricao: "Impressora do laboratório precisa de papel", status: "Encerrado", prioridade: "Baixa", usuario: "Maria Oliveira", categoria: "Periféricos", dataCriacao: "2024-03-10", horaCriacao: "10:15", sla: "12 horas", tempoRestante: "0 horas", setor: "Suporte Técnico" },
-    { id: 4, titulo: "Sistema travando", descricao: "Aplicação congela durante uso", status: "Aguardando retorno", prioridade: "Alta", usuario: "João Santos", categoria: "Software", dataCriacao: "2024-03-09", horaCriacao: "16:45", sla: "24 horas", tempoRestante: "8 horas 15 minutos", setor: "Desenvolvimento" },
-    { id: 5, titulo: "Problema de rede", descricao: "Internet lenta no laboratório", status: "Aguardando terceiro", prioridade: "Média", usuario: "Fernanda Lima", categoria: "Rede", dataCriacao: "2024-03-08", horaCriacao: "09:30", sla: "72 horas", tempoRestante: "60 horas 20 minutos", setor: "Infraestrutura" },
-    { id: 6, titulo: "Atualização pendente", descricao: "Sistema precisa ser atualizado", status: "Atrasado", prioridade: "Baixa", usuario: "Roberto Costa", categoria: "Sistema", dataCriacao: "2024-03-07", horaCriacao: "11:00", sla: "168 horas", tempoRestante: "-24 horas", setor: "Suporte Técnico" },
-  ];
+  const ticketsData = dadosMockSistema.tickets;
 
   const ticketId = id ? parseInt(id) : 1;
   const ticketInfo = ticketsData.find(t => t.id === ticketId) || ticketsData[0];
@@ -121,6 +115,32 @@ const Ticket = () => {
       data: "2024-03-12 16:05",
     },
   ]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadTicket = async () => {
+      try {
+        if (!id) return;
+        const ticketApi = await fetchTicketById(Number(id));
+        if (active) {
+          setTicketData(ticketApi);
+          setStatusSelecionado(ticketApi.status);
+        }
+      } catch {
+        if (active) {
+          setTicketData(ticketInfo);
+          setStatusSelecionado(ticketInfo.status);
+        }
+      }
+    };
+
+    loadTicket();
+
+    return () => {
+      active = false;
+    };
+  }, [id, ticketInfo]);
 
   const [novaMensagem, setNovaMensagem] = useState("");
   const [anexosAtuais, setAnexosAtuais] = useState<Anexo[]>([]);
@@ -246,35 +266,35 @@ const Ticket = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card de Status */}
         <Card className="md:col-span-1">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Status do Ticket
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className={`w-full border rounded h-10 flex items-center justify-center ${getStatusFieldStyle(statusSelecionado)}`}>
-              <span className="text-sm font-medium">{statusSelecionado}</span>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Alterar Status</label>
-              <Select value={statusSelecionado} onValueChange={handleMudarStatus}>
-                <SelectTrigger className="w-full h-10 rounded border border-input bg-white dark:bg-slate-900 text-foreground px-2">
-                  <SelectValue placeholder="Selecione o status" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-slate-900">
-                  {statusOptions.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button variant="secondary" className="mt-2 w-full" onClick={handleGravarStatus}>
-              Gravar
-            </Button>
-          </CardContent>
-        </Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Status do Ticket
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className={`w-full border rounded h-10 flex items-center justify-center ${getStatusFieldStyle(statusSelecionado)}`}>
+                <span className="text-sm font-medium">{statusSelecionado}</span>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Alterar Status</label>
+                <Select value={statusSelecionado} onValueChange={handleMudarStatus}>
+                  <SelectTrigger className="w-full h-10 rounded border border-input bg-white dark:bg-slate-900 text-foreground px-2">
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-slate-900">
+                    {statusOptions.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button variant="secondary" className="mt-2 w-full" onClick={handleGravarStatus}>
+                Gravar
+              </Button>
+            </CardContent>
+          </Card>
 
         {statusSelecionado === "Solicitar aprovação" && (
           <Card className="md:col-span-1">

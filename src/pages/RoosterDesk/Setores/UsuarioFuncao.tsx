@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { dadosMockSistema } from "@/pages/RoosterDesk/dados";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,18 +20,17 @@ interface CategoriaItem {
   subcategorias: string[];
 }
 
-const setoresBase: SetorItem[] = [
-  { nome: "TI", descricao: "Infraestrutura e sistemas", usuarios: ["Ana Souza", "Carlos Silva"], subsetores: ["Infra", "Sistema"] },
-  { nome: "Financeiro", descricao: "Contas a pagar e receber", usuarios: ["João Santos", "Maria Oliveira"], subsetores: ["Contas a pagar", "Contas a receber"] },
-  { nome: "Marketing", descricao: "Vídeos e imagens", usuarios: ["Fernanda Lima", "Roberto Costa"], subsetores: ["Vídeos", "Imagens"] },
-];
+const setoresBase: SetorItem[] = dadosMockSistema.setorDetalhes.map((setor) => ({
+  nome: setor.nome,
+  descricao: setor.descricao,
+  usuarios: setor.usuarios,
+  subsetores: setor.subsetores,
+}));
 
-const categoriasBase: CategoriaItem[] = [
-  { nome: "Infraestrutura", subcategorias: ["Reforma", "Instalação", "Manutenção"] },
-  { nome: "Software", subcategorias: ["Bug", "Nova funcionalidade", "Atualização"] },
-  { nome: "Hardware", subcategorias: ["Substituição", "Reparo", "Configuração"] },
-  { nome: "Rede", subcategorias: ["Conectividade", "VPN", "Segurança"] },
-];
+const categoriasBase: CategoriaItem[] = dadosMockSistema.categorias.map((categoria) => ({
+  nome: categoria.nome,
+  subcategorias: categoria.subcategorias,
+}));
 
 const UsuarioFuncao = () => {
   const navigate = useNavigate();
@@ -167,14 +167,18 @@ const UsuarioFuncao = () => {
               <div className="flex flex-wrap gap-2">
                 {(assignments[usuario] ?? []).map((funcao) => (
                   <Badge key={funcao} variant="secondary" className="px-2 py-1">
-                    {funcao}
-                    <button
-                      onClick={() => handleRemoverFuncao(usuario, funcao)}
-                      className="ml-1 rounded-full px-1 font-bold"
-                    >
-                      ✕
-                    </button>
-                  </Badge>
+                      {funcao}
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Remover a função '${funcao}' do usuário '${usuario}'?`)) {
+                            handleRemoverFuncao(usuario, funcao);
+                          }
+                        }}
+                        className="ml-1 rounded-full px-1 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </Badge>
                 ))}
               </div>
               {(assignments[usuario] ?? []).length === 0 && (
