@@ -36,6 +36,13 @@ import DisciplinasInstitucionais from "@/pages/RoosterAcademy/DisciplinasInstitu
 import DisciplinasCategoria from "@/pages/RoosterAcademy/DisciplinasCategoria";
 import ControlePresenca from "@/pages/RoosterAcademy/ControlePresenca";
 import TurmaCalendarioPresenca from "@/pages/RoosterAcademy/TurmaCalendarioPresenca";
+import RoosterAssets from "@/pages/RoosterAssets/RoosterAssets";
+import AtivosPage from "@/pages/RoosterAssets/AtivosPage";
+import SubcategoriasPage from "@/pages/RoosterAssets/SubcategoriasPage";
+import EmprestimosPage from "@/pages/RoosterAssets/EmprestimosPage";
+import RoosterLearn from "@/pages/RoosterLearn/RoosterLearn";
+import RoosterBoost from "@/pages/RoosterBoost/RoosterBoost";
+import RoosterFinance from "@/pages/RoosterFinance/RoosterFinance";
 
 const queryClient = new QueryClient();
 
@@ -74,7 +81,7 @@ const App = () => (
           <RoleBasedRedirect />
           <Routes>
           <Route path="/" element={<Navigate to="/inicio" replace />} />
-          <Route path="/hub" element={<Hub />} />
+          <Route path="/hub" element={<Layout><Hub /></Layout>} />
           <Route path="/inicio" element={<Layout><Inicio /></Layout>} />
           <Route path="/dashboard" element={<Layout><DashboardWithRedirect /></Layout>} />
           <Route path="/login" element={<Login />} />
@@ -97,6 +104,14 @@ const App = () => (
           <Route path="/academy/controle-presenca/turmas/:turmaId" element={<Layout><TurmaCalendarioPresenca /></Layout>} />
           <Route path="/academy/disciplinas" element={<Layout><DisciplinasInstitucionais /></Layout>} />
           <Route path="/academy/disciplinas/:categoriaNome/disciplinas" element={<Layout><DisciplinasCategoria /></Layout>} />
+          <Route path="/assets" element={<Layout><RoosterAssets /></Layout>} />
+          <Route path="/assets/ativos" element={<Layout><AtivosPage /></Layout>} />
+          <Route path="/assets/subcategorias" element={<Layout><SubcategoriasPage /></Layout>} />
+          <Route path="/assets/emprestimos" element={<Layout><EmprestimosPage /></Layout>} />
+          <Route path="/learn" element={<Layout><RoosterLearn /></Layout>} />
+          <Route path="/learn/gerenciar" element={<Layout><RoosterLearn /></Layout>} />
+          <Route path="/boost" element={<Layout><RoosterBoost /></Layout>} />
+          <Route path="/finance" element={<Layout><RoosterFinance /></Layout>} />
           <Route path="/categorias" element={<Layout><Categorias /></Layout>} />
           <Route path="/categorias/:categoria/subcategorias" element={<Layout><Subcategorias /></Layout>} />
           <Route path="/setores" element={<Layout><Setores /></Layout>} />

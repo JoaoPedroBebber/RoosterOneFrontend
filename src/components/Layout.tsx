@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Users, Settings, MessageSquare, Layers, Grid, LogOut, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, DoorOpen, CalendarDays, BookOpen } from "lucide-react";
+import { Archive, BookOpen, Building2, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, CreditCard, DoorOpen, Grid, Home, Laptop, Layers, LogOut, MessageSquare, Play, Search, Settings, Users, Video } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useDeskRole } from "@/context/DeskContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -51,6 +51,40 @@ const academyGroup: NavGroup = {
   ],
 };
 
+const roosterAssetsGroup: NavGroup = {
+  id: "assets",
+  title: "Rooster Assets",
+  icon: Archive,
+  items: [
+    { label: "Gerenciar ativos", path: "/assets", icon: Archive },
+    { label: "Empréstimo", path: "/assets/emprestimos", icon: ClipboardList },
+  ],
+};
+
+const roosterLearnGroup: NavGroup = {
+  id: "learn",
+  title: "Rooster Learn",
+  icon: Laptop,
+  items: [
+    { label: "Atividades", path: "/learn", icon: Laptop },
+    { label: "Gerenciar Atividades", path: "/learn/gerenciar", icon: ClipboardList },
+  ],
+};
+
+const roosterBoostGroup: NavGroup = {
+  id: "boost",
+  title: "Rooster Boost",
+  icon: Play,
+  items: [{ label: "Cursos e videoaulas", path: "/boost", icon: Play }],
+};
+
+const roosterFinanceGroup: NavGroup = {
+  id: "finance",
+  title: "Rooster Finance",
+  icon: CreditCard,
+  items: [{ label: "Financeiro", path: "/finance", icon: CreditCard }],
+};
+
 const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const { role, setRole } = useDeskRole();
@@ -59,19 +93,21 @@ const Layout = ({ children }: LayoutProps) => {
   const [expandedGroup, setExpandedGroup] = React.useState<string | null>("desk");
 
   const groups = React.useMemo<NavGroup[]>(() => {
+    const allGroups = [deskGroup, roomsGroup, academyGroup, roosterAssetsGroup, roosterLearnGroup, roosterBoostGroup, roosterFinanceGroup];
+
     if (role === "admin") {
-      return [deskGroup, roomsGroup, academyGroup];
+      return allGroups;
     }
 
     if (role === "coordenador") {
-      return [deskGroup, roomsGroup, academyGroup];
+      return allGroups;
     }
 
     if (role === "tecnico") {
-      return [deskGroup, roomsGroup, academyGroup];
+      return allGroups;
     }
 
-    return [deskGroup, roomsGroup, academyGroup];
+    return allGroups;
   }, [role]);
 
   const filteredGroups = React.useMemo(() => {
